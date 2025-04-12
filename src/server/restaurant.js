@@ -83,7 +83,7 @@ export default {
         })),
       }
 
-      res.json(geojson) // Trả về trực tiếp GeoJSON
+      res.json(geojson)
     } catch (error) {
       console.error('Lỗi truy vấn:', error)
       res.status(400).json({ message: 'Không tìm thấy nhà hàng nào!' })

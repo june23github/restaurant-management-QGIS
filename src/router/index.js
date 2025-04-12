@@ -27,9 +27,9 @@ export default route(function (/* { store, ssrContext } */) {
 
   Router.beforeEach((to, from, next) => {
     const userStore = useUserStore()
-    const { role } = userStore.getUser
+    const user = userStore.getUser
     if (to?.meta?.authRequired) {
-      if (role === 'ADMIN') {
+      if (user.role === 'ADMIN') {
         next()
       } else {
         next({ name: 'HomePage' })

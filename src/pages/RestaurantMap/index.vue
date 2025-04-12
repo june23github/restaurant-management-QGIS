@@ -12,10 +12,10 @@
           v-model="searchRestaurantName"
           label="Nhập tên nhà hàng"
           dense
-          @keyup.enter="searchRestaurants"
+          @keyup.enter="searchRestaurantsByName"
         >
           <template v-slot:append>
-            <q-btn round dense flat icon="search" @click="searchRestaurants" />
+            <q-btn round dense flat icon="search" @click="searchRestaurantsByName" />
           </template>
         </q-input>
       </q-card-section>
@@ -174,6 +174,7 @@
 
 <script>
 import { ref, onMounted, computed } from 'vue'
+import apiRestaurant from '../../api/restaurant'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -205,7 +206,6 @@ export default {
     const editingPosition = ref({ lat: '', lng: '' })
     const restaurantToDelete = ref(null)
 
-    // Hàm ẩn/hiện ô tìm kiếm
     const toggleSearchPanel = () => {
       isSearchPanelVisible.value = !isSearchPanelVisible.value
     }
@@ -287,19 +287,12 @@ export default {
           longitude: newRestaurant.value.longitude,
         }
 
-        const response = await fetch('http://localhost:3000/api/restaurants', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
+        const response = await apiRestaurant.addRestaurant(payload)
 
-        if (!response.ok) {
+        if (response.status !== 201) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        await response.json()
-
-        // Reload the restaurants data
         fetchRestaurants()
 
         // Clear temp marker
@@ -332,14 +325,9 @@ export default {
             coordinates: [editingPosition.value.lng, editingPosition.value.lat],
           },
         }
+        const response = await apiRestaurant.updateRestaurant(id, payload)
 
-        const response = await fetch(`http://localhost:3000/api/restaurants/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-
-        if (!response.ok) {
+        if (response.status !== 200) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
 
@@ -360,15 +348,12 @@ export default {
         }
 
         const id = restaurantToDelete.value.properties.id
-        const response = await fetch(`http://localhost:3000/api/restaurants/${id}`, {
-          method: 'DELETE',
-        })
+        const response = await apiRestaurant.deleteRestaurant(id)
 
-        if (!response.ok) {
+        if (response.status !== 200) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        // Reload the restaurants data
         fetchRestaurants()
 
         searchResults.value = searchResults.value.filter(
@@ -384,21 +369,10 @@ export default {
 
     const fetchRestaurants = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/restaurants', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        })
+        const data = await apiRestaurant.getAll()
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const data = await response.json()
-
-        // Clear existing restaurants
         restaurantsLayer.clearLayers()
 
-        // Add new data
         restaurantsLayer.addData(data)
       } catch (error) {
         console.error('Error fetching restaurants:', error)
@@ -407,14 +381,12 @@ export default {
     }
 
     onMounted(() => {
-      // Khởi tạo bản đồ
       map = L.map('map', {
         center: [16.074, 108.224],
         zoom: 12,
         layers: [],
       })
 
-      // Định nghĩa các lớp nền
       const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         // attribution: '© OpenStreetMap contributors',
         maxZoom: 19,
@@ -425,16 +397,12 @@ export default {
         maxZoom: 20,
       })
 
-      // Định nghĩa các lớp phủ
-      const vietnamBoundary = L.tileLayer.wms(
-        'http://localhost:8080/geoserver/restaurantQGIS/wms',
-        {
-          layers: 'restaurantQGIS:vn_e_danang',
-          format: 'image/png',
-          transparent: true,
-          opacity: 1.0,
-        },
-      )
+      const blurLayer = L.tileLayer.wms('http://localhost:8080/geoserver/restaurantQGIS/wms', {
+        layers: 'restaurantQGIS:vn_e_danang',
+        format: 'image/png',
+        transparent: true,
+        opacity: 1.0,
+      })
 
       const danangBoundary = L.tileLayer.wms('http://localhost:8080/geoserver/restaurantQGIS/wms', {
         layers: 'restaurantQGIS:border_danang',
@@ -457,7 +425,7 @@ export default {
           layer.bindPopup(`
             <b>Nhà hàng:</b> ${props.name || 'Không có tên'}<br>
             <b>Ẩm thực:</b> ${props.cuisine || 'Không rõ'}<br>
-            <b>Địa chỉ:</b>  ${props.addr_housenumber || ''} ${props.addr_street || ''}<br>
+            <b>Địa chỉ:</b> ${props.addr_housenumber && props.addr_street ? `${props.addr_housenumber} ${props.addr_street}` : props.addr_housenumber || props.addr_street || 'Không có thông tin địa chỉ'}<br>
             <div style="margin-top: 10px;">
               <button 
                 onclick="document.dispatchEvent(new CustomEvent('edit-restaurant', {detail: ${props.id}}))"
@@ -493,24 +461,21 @@ export default {
         }
       })
 
-      // Tải dữ liệu từ API backend
       fetchRestaurants()
 
-      // Nhóm lớp nền và lớp phủ
       const baseLayers = {
         OpenStreetMap: osmLayer,
         Satellite: satelliteLayer,
       }
 
       const overlayLayers = {
-        'Ranh giới Việt Nam': vietnamBoundary,
+        'Lớp mờ các tỉnh/thành khác': blurLayer,
         'Ranh giới Đà Nẵng': danangBoundary,
         'Nhà hàng': restaurantsLayer,
       }
 
-      // Thêm lớp nền và lớp phủ
       osmLayer.addTo(map)
-      vietnamBoundary.addTo(map)
+      blurLayer.addTo(map)
       danangBoundary.addTo(map)
       restaurantsLayer.addTo(map)
 
@@ -527,7 +492,7 @@ export default {
       return found
     }
 
-    const searchRestaurants = async () => {
+    const searchRestaurantsByName = async () => {
       searchError.value = ''
       if (!searchRestaurantName.value.trim()) {
         searchResults.value = []
@@ -535,19 +500,7 @@ export default {
       }
 
       try {
-        const response = await fetch(
-          `http://localhost:3000/api/restaurants/${searchRestaurantName.value}`,
-          {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-          },
-        )
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const data = await response.json()
+        const data = await apiRestaurant.getByName(searchRestaurantName.value)
 
         if (data.features && data.features.length > 0) {
           searchResults.value = data.features
@@ -579,7 +532,7 @@ export default {
       searchRestaurantName,
       searchResults,
       searchError,
-      searchRestaurants,
+      searchRestaurantsByName,
       panToRestaurant,
       addDialog,
       editDialog,
