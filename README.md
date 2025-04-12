@@ -1,4 +1,4 @@
-# DanaBus App (quanlytramxebuyt)
+# DanaRes App (Quản lí nhà hàng ở Đà Nẵng)
 
 A Quasar Project
 
