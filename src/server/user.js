@@ -32,11 +32,8 @@ export default {
           password: password || undefined,
           profile: {
             create: {
-              sub: profile.sub || undefined,
               email: email || profile.email || undefined,
               name: profile.name || undefined,
-              given_name: profile.given_name || undefined,
-              family_name: profile.family_name || undefined,
               picture: profile.picture || undefined,
             },
           },
@@ -125,11 +122,8 @@ export default {
           password: password || undefined,
           profile: {
             update: {
-              sub: profile.sub || undefined,
               email: email || profile.email || undefined,
               name: profile.name || undefined,
-              given_name: profile.given_name || undefined,
-              family_name: profile.family_name || undefined,
               picture: profile.picture || undefined,
             },
           },
@@ -139,11 +133,8 @@ export default {
           password: password || undefined,
           profile: {
             create: {
-              sub: profile.sub || undefined,
               email: email || profile.email || undefined,
               name: profile.name || undefined,
-              given_name: profile.given_name || undefined,
-              family_name: profile.family_name || undefined,
               picture: profile.picture || undefined,
             },
           },
@@ -208,11 +199,8 @@ export default {
           role: role || Role.USER,
           profile: {
             update: {
-              sub: profile.sub || undefined,
               email: email || profile.email || undefined,
               name: profile.name || undefined,
-              given_name: profile.given_name || undefined,
-              family_name: profile.family_name || undefined,
               picture: profile.picture || undefined,
               gender: profile.gender || undefined,
               address: profile.address || undefined,
@@ -224,11 +212,8 @@ export default {
           email,
           profile: {
             create: {
-              sub: profile.sub || undefined,
               email: email || profile.email || undefined,
               name: profile.name || undefined,
-              given_name: profile.given_name || undefined,
-              family_name: profile.family_name || undefined,
               picture: profile.picture || undefined,
               gender: profile.gender || undefined,
               address: profile.address || undefined,

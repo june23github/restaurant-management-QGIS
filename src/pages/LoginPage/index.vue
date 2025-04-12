@@ -54,7 +54,7 @@
                 rounded
                 label="Login"
               ></q-btn>
-              <!-- <GoogleLogin :callback="callback" popup-type="TOKEN" /> -->
+              <GoogleLogin :callback="callback" popup-type="TOKEN" />
             </div>
           </q-form>
         </q-card-section>

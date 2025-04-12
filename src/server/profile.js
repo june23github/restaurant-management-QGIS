@@ -34,11 +34,8 @@ export default {
     try {
       const data = await prisma.profile.create({
         data: {
-          sub: profile.sub || undefined,
           email: profile.email || undefined,
           name: profile.name || undefined,
-          given_name: profile.given_name || undefined,
-          family_name: profile.family_name || undefined,
           picture: profile.picture || undefined,
           gender: profile.gender || undefined,
           address: profile.address || undefined,
@@ -84,11 +81,8 @@ export default {
           id: profile.id,
         },
         data: {
-          sub: profile.sub || undefined,
           email: profile.email || undefined,
           name: profile.name || undefined,
-          given_name: profile.given_name || undefined,
-          family_name: profile.family_name || undefined,
           picture: profile.picture || undefined,
           gender: profile.gender || undefined,
           address: profile.address || undefined,

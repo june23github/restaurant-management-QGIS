@@ -29,7 +29,7 @@
               outlined
               v-model="username"
               name="username"
-              :label="$t('Username')"
+              :label="$t('Email')"
               :rules="rules.username"
               lazy-rules
             ></q-input>
