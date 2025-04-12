@@ -15,6 +15,11 @@ const routes = [
         name: 'MapPage',
         component: () => import('pages/RestaurantMap/index.vue'),
       },
+      {
+        path: 'user-management',
+        name: 'UserManagePage',
+        component: () => import('pages/UserManagerPage/index.vue'),
+      },
     ],
   },
   {

@@ -1,9 +1,9 @@
 {
-  "name": "quanlytramxebuyt",
+  "name": "restaurant-gis-map",
   "version": "0.0.1",
   "description": "A Quasar Project",
   "productName": "DanaRes App",
-  "author": "duongdinh2003 <lhdd1904@gmail.com>",
+  "author": "",
   "type": "module",
   "private": true,
   "scripts": {
@@ -32,7 +32,6 @@
     "multer": "^1.4.5-lts.2",
     "nodemon": "^3.1.9",
     "ol": "^10.5.0",
-    "pg": "^8.14.1",
     "pinia": "^3.0.1",
     "pinia-plugin-persistedstate": "^4.2.0",
     "prisma": "^6.6.0",

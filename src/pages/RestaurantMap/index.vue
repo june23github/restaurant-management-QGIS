@@ -183,17 +183,15 @@ export default {
     const searchRestaurantName = ref('')
     const searchResults = ref([])
     const searchError = ref('')
-    const isSearchPanelVisible = ref(true) // Trạng thái hiển thị của ô tìm kiếm
+    const isSearchPanelVisible = ref(true)
     let map
     let restaurantsLayer
     let tempMarker = null
 
-    // Dialog states
     const addDialog = ref(false)
     const editDialog = ref(false)
     const deleteDialog = ref(false)
 
-    // Restaurant data
     const newRestaurant = ref({
       name: '',
       cuisine: '',
@@ -235,7 +233,6 @@ export default {
     const openEditDialog = (restaurant) => {
       editingRestaurant.value = JSON.parse(JSON.stringify(restaurant))
 
-      // Extract coordinates
       if (restaurant.geometry && restaurant.geometry.coordinates) {
         const [lng, lat] = restaurant.geometry.coordinates
         editingPosition.value = { lat, lng }

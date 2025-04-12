@@ -73,6 +73,7 @@ export default {
       const user = await prisma.user.findUnique({
         where: {
           email,
+          activate: true,
         },
         include: {
           profile: true,
