@@ -46,7 +46,7 @@
             </q-badge>
           </q-td>
           <q-td key="name" :props="props">
-            {{ props.row.name }}
+            {{ props.row.profile.name }}
           </q-td>
           <q-td key="role" :props="props">
             <q-badge v-if="props.row.role === 'USER'" color="primary">

@@ -1,5 +1,5 @@
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -7,49 +7,54 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String    @unique @db.VarChar
+  password  String    @db.VarChar(100)
+  role      Role      @default(USER)
+  activate  Boolean   @default(true)
+  createdAt DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+  profile   Profile?
+}
+
+model Profile {
+  id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email    String    @unique @db.VarChar
+  name     String?   @db.VarChar
+  birthday DateTime? @db.Timestamp(6)
+  gender   Gender?
+  address  String?
+  picture  String?
+  userId   String?   @unique @db.Uuid
+  user     User?     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model restaurants {
+  id               Int                      @id @default(autoincrement())
+  geom             Unsupported("geometry")?
+  addr_street      String?                  @map("addr:street") @db.VarChar
+  addr_housenumber String?                  @map("addr:housenumber") @db.VarChar
+  cuisine          String?                  @db.VarChar
+  name             String?                  @db.VarChar
+}
+
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
 
 enum Role {
-  USER
   ADMIN
+  USER
+  SUPERADMIN
 }
 
 enum Gender {
   MALE
   FEMALE
   OTHER
-}
-
-model Restaurant {
-  id              Int      @id
-  geom            Json     // Lưu GeoJSON từ ST_AsGeoJSON
-  addr_street     String?  @map("addr:street")
-  addr_housenumber String? @map("addr:housenumber")
-  cuisine         String?
-  name            String?
-}
-
-
-model User {
-  id       String   @id @default(uuid())
-  email    String   @unique
-  password String   @db.VarChar(32)
-  role     Role     @default(USER)
-  activate Boolean  @default(true)
-  profile  Profile?
-
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
-}
-
-model Profile {
-  id          String    @id @default(uuid())
-  email       String    @unique
-  name        String?
-  birthday    DateTime?
-  gender      Gender?
-  address     String?
-  picture     String?  
-  user        User      @relation(fields: [userId], references: [id])
-  userId      String    @unique
-
 }

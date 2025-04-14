@@ -1,6 +1,6 @@
 import pkg from '@prisma/client'
 const { PrismaClient, Role } = pkg
-
+import { hashPassword, comparePassword } from '../utils/hashPassword.js'
 const prisma = new PrismaClient()
 
 export default {
@@ -29,7 +29,7 @@ export default {
       const user = await prisma.user.create({
         data: {
           email,
-          password: password || undefined,
+          password: (await hashPassword(password)) || undefined,
           profile: {
             create: {
               email: email || profile.email || undefined,
@@ -69,26 +69,33 @@ export default {
    */
   login: async (req, res) => {
     const { email, password } = req.body
+
     try {
       const user = await prisma.user.findUnique({
-        where: {
-          email,
-          activate: true,
-        },
-        include: {
-          profile: true,
-        },
+        where: { email },
+        include: { profile: true },
       })
-      if (user?.password === password) {
-        delete user['password']
-        res.json(user)
-      } else {
-        res.status(404)
-        res.json({ error: 'Wrong email or password!' })
+
+      if (!user) {
+        return res.status(401).json({ error: 'Wrong email or password!' })
       }
-    } catch {
-      res.status(404)
-      res.json({ error: 'There is some errors!' })
+
+      if (!user.activate) {
+        return res
+          .status(403)
+          .json({ error: 'Your account is not activated. Please contact support.' })
+      }
+
+      if (!(await comparePassword(password, user.password))) {
+        return res.status(401).json({ error: 'Wrong email or password!' })
+      }
+
+      delete user.password
+
+      res.json(user)
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ error: 'Internal Server Error' })
     }
   },
   /**
@@ -111,16 +118,14 @@ export default {
    *         description: Unauthorized
    */
   loginGoogle: async (req, res) => {
-    const { email, password, role, profile } = req.body
-    console.log('role', role)
-
+    const { email, password, profile } = req.body
     try {
       const user = await prisma.user.upsert({
         where: {
           email,
         },
         update: {
-          password: password || undefined,
+          password: (await hashPassword(password)) || undefined,
           profile: {
             update: {
               email: email || profile.email || undefined,
@@ -131,7 +136,7 @@ export default {
         },
         create: {
           email,
-          password: password || undefined,
+          password: (await hashPassword(password)) || undefined,
           profile: {
             create: {
               email: email || profile.email || undefined,

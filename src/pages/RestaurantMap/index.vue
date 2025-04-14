@@ -388,12 +388,12 @@ export default {
       })
 
       const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        // attribution: '© OpenStreetMap contributors',
+        attribution: '© OpenStreetMap contributors',
         maxZoom: 19,
       })
 
       const satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-        // attribution: '© Google Maps',
+        attribution: '© Google Maps',
         maxZoom: 20,
       })
 
@@ -444,7 +444,6 @@ export default {
         },
       })
 
-      // Event listeners for popup actions
       document.addEventListener('edit-restaurant', (e) => {
         const id = e.detail
         const restaurant = findRestaurantById(id)

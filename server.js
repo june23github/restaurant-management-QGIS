@@ -52,8 +52,9 @@ app.post('/api/login-google', userAPI.loginGoogle)
 app.post('/api/register', userAPI.register)
 
 // profile
-app.get('/api/profile', userAPI.getAll)
-app.put('/api/profile/:id', profileAPI.update)
+app.get('/api/profiles', userAPI.getAll)
+app.put('/api/profiles/:id', profileAPI.update)
+app.get('/api/profiles/:id', profileAPI.getById)
 
 app.listen(process.env.API_PORT || 3000, () => {
   console.log(`Server started on port ${process.env.API_PORT || 3000}`)
