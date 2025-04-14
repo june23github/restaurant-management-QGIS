@@ -129,10 +129,6 @@ export default {
         WHERE name ILIKE ${'%' + name + '%'}
       `
 
-      if (!restaurants || restaurants.length === 0) {
-        return res.status(404).json({ message: 'No restaurants found!' })
-      }
-
       const geojson = {
         type: 'FeatureCollection',
         features: restaurants.map((restaurant) => ({

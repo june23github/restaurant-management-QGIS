@@ -55,13 +55,13 @@
                 'Please enter a valid email',
             ]"
           />
-          <q-input
+          <!-- <q-input
             outlined
             dense
             :label="$t('Phone Number')"
             v-model="userProfile.phone_number"
             class="col"
-          />
+          /> -->
         </div>
 
         <q-input
@@ -71,13 +71,13 @@
           v-model="userProfile.address"
           class="q-mt-md"
         />
-        <q-input
+        <!-- <q-input
           outlined
           dense
           :label="$t('Current Location')"
           v-model="userProfile.current_location"
           class="q-mt-sm"
-        />
+        /> -->
       </div>
 
       <!-- <div class="col-4 flex flex-center">

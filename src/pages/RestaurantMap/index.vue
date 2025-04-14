@@ -4,13 +4,12 @@
       <div id="map"></div>
     </div>
 
-    <!-- Panel tìm kiếm ở góc dưới bên trái với khả năng ẩn/hiện -->
     <q-card class="search-panel" v-show="isSearchPanelVisible">
       <q-card-section>
-        <div class="text-h6">Tìm kiếm nhà hàng</div>
+        <div class="text-h6">{{ $t('Search for restaurant') }}</div>
         <q-input
           v-model="searchRestaurantName"
-          label="Nhập tên nhà hàng"
+          :label="$t('Enter the restaurant name')"
           dense
           @keyup.enter="searchRestaurantsByName"
         >
@@ -59,12 +58,14 @@
           @click="toggleSearchPanel"
           class="q-mr-sm"
         >
-          <q-tooltip>{{ isSearchPanelVisible ? 'Ẩn ô tìm kiếm' : 'Hiện ô tìm kiếm' }}</q-tooltip>
+          <q-tooltip>{{
+            isSearchPanelVisible ? $t('Hide search box') : $t('Show search box')
+          }}</q-tooltip>
         </q-btn>
 
         <!-- Nút thêm nhà hàng mới -->
-        <q-btn round color="primary" icon="add" @click="openAddDialog">
-          <q-tooltip>Thêm nhà hàng mới</q-tooltip>
+        <q-btn round color="primary" icon="add" @click="openAddDialog" v-if="isAdmin">
+          <q-tooltip>{{ $t('Add new restaurant') }}</q-tooltip>
         </q-btn>
       </div>
     </q-page-sticky>
@@ -73,34 +74,44 @@
     <q-dialog v-model="addDialog" persistent>
       <q-card style="min-width: 350px">
         <q-card-section>
-          <div class="text-h6">Thêm nhà hàng mới</div>
+          <div class="text-h6">{{ $t('Add new restaurant') }}</div>
         </q-card-section>
 
         <q-card-section>
-          <q-input v-model="newRestaurant.name" label="Tên nhà hàng" dense />
-          <q-input v-model="newRestaurant.cuisine" label="Ẩm thực" dense class="q-mt-sm" />
-          <q-input v-model="newRestaurant.addr_street" label="Tên đường" dense class="q-mt-sm" />
-          <q-input v-model="newRestaurant.addr_housenumber" label="Số nhà" dense class="q-mt-sm" />
+          <q-input v-model="newRestaurant.name" :label="$t('Restaurant name')" dense />
+          <q-input v-model="newRestaurant.cuisine" :label="$t('Cuisine')" dense class="q-mt-sm" />
+          <q-input
+            v-model="newRestaurant.addr_street"
+            :label="$t('Street name')"
+            dense
+            class="q-mt-sm"
+          />
+          <q-input
+            v-model="newRestaurant.addr_housenumber"
+            :label="$t('House number')"
+            dense
+            class="q-mt-sm"
+          />
           <div class="text-caption q-mt-sm">
-            Vị trí: {{ selectedPosition.lat }}, {{ selectedPosition.lng }}
+            {{ $t('Location') }}: {{ selectedPosition.lat }}, {{ selectedPosition.lng }}
           </div>
           <div class="text-caption q-mt-sm text-grey">
-            Chọn vị trí trên bản đồ bằng cách nhấn vào nút "Chọn vị trí"
+            {{ $t('Select a location on the map by clicking the "Select Location" button') }}
           </div>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Hủy" color="primary" v-close-popup />
+          <q-btn flat :label="$t('Delete')" color="primary" v-close-popup />
           <q-btn
             flat
-            label="Chọn vị trí"
+            :label="$t('Select location')"
             color="secondary"
             @click="startSelectingLocation"
             v-close-popup
           />
           <q-btn
             flat
-            label="Lưu"
+            :label="$t('Save')"
             color="primary"
             @click="addRestaurant"
             :disable="!isValidRestaurant"
@@ -113,44 +124,48 @@
     <q-dialog v-model="editDialog" persistent>
       <q-card style="min-width: 350px">
         <q-card-section>
-          <div class="text-h6">Sửa thông tin nhà hàng</div>
+          <div class="text-h6">{{ $t('Edit restaurant information') }}</div>
         </q-card-section>
 
         <q-card-section>
-          <q-input v-model="editingRestaurant.properties.name" label="Tên nhà hàng" dense />
+          <q-input
+            v-model="editingRestaurant.properties.name"
+            :label="$t('Restaurant name')"
+            dense
+          />
           <q-input
             v-model="editingRestaurant.properties.cuisine"
-            label="Ẩm thực"
+            :label="$t('Cuisine')"
             dense
             class="q-mt-sm"
           />
           <q-input
             v-model="editingRestaurant.properties.addr_street"
-            label="Tên đường"
+            :label="$t('Street name')"
             dense
             class="q-mt-sm"
           />
           <q-input
             v-model="editingRestaurant.properties.addr_housenumber"
-            label="Số nhà"
+            :label="$t('House number')"
             dense
             class="q-mt-sm"
           />
           <div class="text-caption q-mt-sm">
-            Vị trí: {{ editingPosition.lat }}, {{ editingPosition.lng }}
+            {{ $t('Location') }}: {{ editingPosition.lat }}, {{ editingPosition.lng }}
           </div>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Hủy" color="primary" v-close-popup />
+          <q-btn flat :label="$t('Cancel')" color="primary" v-close-popup />
           <q-btn
             flat
-            label="Cập nhật vị trí"
+            :label="$t('Update location')"
             color="secondary"
             @click="startEditingLocation"
             v-close-popup
           />
-          <q-btn flat label="Lưu" color="primary" @click="updateRestaurant" />
+          <q-btn flat :label="$t('Save')" color="primary" @click="updateRestaurant" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -160,12 +175,18 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="delete" color="negative" text-color="white" />
-          <span class="q-ml-sm">Bạn có chắc chắn muốn xóa nhà hàng này?</span>
+          <span class="q-ml-sm">{{ $t('Are you sure you want to delete this restaurant?') }}</span>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Hủy" color="primary" v-close-popup />
-          <q-btn flat label="Xóa" color="negative" @click="deleteRestaurant" v-close-popup />
+          <q-btn flat :label="$t('Cancel')" color="primary" v-close-popup />
+          <q-btn
+            flat
+            :label="$t('Delete')"
+            color="negative"
+            @click="deleteRestaurant"
+            v-close-popup
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -177,6 +198,8 @@ import { ref, onMounted, computed } from 'vue'
 import apiRestaurant from '../../api/restaurant'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { i18n } from 'boot/i18n.js'
+import { useUserStore } from 'stores/user'
 
 export default {
   name: 'MapPage',
@@ -188,6 +211,10 @@ export default {
     let map
     let restaurantsLayer
     let tempMarker = null
+    const $t = i18n.global.t
+    const userStore = useUserStore()
+
+    const isAdmin = computed(() => userStore.getUser?.role === 'ADMIN')
 
     const addDialog = ref(false)
     const editDialog = ref(false)
@@ -423,23 +450,28 @@ export default {
         onEachFeature: (feature, layer) => {
           const props = feature.properties
           layer.bindPopup(`
-            <b>Nhà hàng:</b> ${props.name || 'Không có tên'}<br>
-            <b>Ẩm thực:</b> ${props.cuisine || 'Không rõ'}<br>
-            <b>Địa chỉ:</b> ${props.addr_housenumber && props.addr_street ? `${props.addr_housenumber} ${props.addr_street}` : props.addr_housenumber || props.addr_street || 'Không có thông tin địa chỉ'}<br>
-            <div style="margin-top: 10px;">
+            <b>${$t('Restaurant')}:</b> ${props.name || $t('No name')}<br>
+            <b>${$t('Cuisine')}:</b> ${props.cuisine || $t('Unknown')}<br>
+            <b>${$t('Address')}:</b> ${props.addr_housenumber && props.addr_street ? `${props.addr_housenumber} ${props.addr_street}` : props.addr_housenumber || props.addr_street || $t('No address information available')}<br>
+            ${
+              isAdmin.value
+                ? `<div style="margin-top: 10px;">
               <button 
                 onclick="document.dispatchEvent(new CustomEvent('edit-restaurant', {detail: ${props.id}}))"
                 style="background-color: #1976D2; color: white; border: none; padding: 5px 10px; margin-right: 5px; cursor: pointer;"
               >
-                Sửa
+                ${$t('Edit')}
               </button>
               <button 
                 onclick="document.dispatchEvent(new CustomEvent('delete-restaurant', {detail: ${props.id}}))"
                 style="background-color: #C10015; color: white; border: none; padding: 5px 10px; cursor: pointer;"
               >
-                Xóa
+                ${$t('Delete')}
               </button>
             </div>
+          `
+                : ''
+            }
           `)
         },
       })
@@ -506,11 +538,13 @@ export default {
         } else {
           searchResults.value = []
           searchError.value =
-            'Không tìm thấy nhà hàng nào có tên chứa "' + searchRestaurantName.value + '".'
+            `${$t('No restaurants found with the name containing')} "` +
+            searchRestaurantName.value +
+            '".'
         }
       } catch (error) {
         console.error('Error searching restaurants:', error)
-        searchError.value = `Lỗi tìm kiếm: ${error.message}`
+        searchError.value = `${$t('Search error')}: ${error.message}`
         searchResults.value = []
       }
     }
@@ -529,6 +563,7 @@ export default {
 
     return {
       searchRestaurantName,
+      isAdmin,
       searchResults,
       searchError,
       searchRestaurantsByName,
