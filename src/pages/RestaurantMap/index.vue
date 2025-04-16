@@ -48,7 +48,36 @@
       </q-card-section>
     </q-card>
 
-    <!-- Nút ẩn/hiện ô tìm kiếm ở góc dưới bên trái -->
+    <!-- Panel tìm đường -->
+    <q-card class="route-panel" v-show="isRoutePanelVisible">
+      <q-card-section>
+        <div class="text-h6">{{ $t('Find route') }}</div>
+        <div class="q-mt-sm">
+          <div class="text-subtitle2">{{ $t('Start point') }}:</div>
+          <q-input v-model="startPoint.text" readonly dense>
+            <template v-slot:append>
+              <q-btn round dense flat icon="my_location" @click="selectStartPoint" />
+            </template>
+          </q-input>
+        </div>
+        <div class="q-mt-sm">
+          <div class="text-subtitle2">{{ $t('Destination point') }}:</div>
+          <q-input v-model="destPoint.text" readonly dense>
+            <template v-slot:append>
+              <q-btn round dense flat icon="place" @click="selectDestPoint" />
+            </template>
+          </q-input>
+        </div>
+        <div class="row q-mt-md">
+          <q-btn color="primary" class="col" @click="findRoute">{{ $t('Find route') }}</q-btn>
+          <q-btn color="negative" class="col q-ml-sm" @click="clearRoute">{{
+            $t('Clear route')
+          }}</q-btn>
+        </div>
+      </q-card-section>
+    </q-card>
+
+    <!-- Nút ẩn/hiện ô tìm kiếm và tìm đường ở góc dưới bên trái -->
     <q-page-sticky position="bottom-left" :offset="[18, 8]">
       <div class="button-group">
         <q-btn
@@ -64,8 +93,27 @@
         </q-btn>
 
         <!-- Nút thêm nhà hàng mới -->
-        <q-btn round color="primary" icon="add" @click="openAddDialog" v-if="isAdmin">
+        <q-btn
+          round
+          color="primary"
+          icon="add"
+          @click="openAddDialog"
+          v-if="isAdmin"
+          class="q-mr-sm"
+        >
           <q-tooltip>{{ $t('Add new restaurant') }}</q-tooltip>
+        </q-btn>
+
+        <!-- Nút bật/tắt tìm đường -->
+        <q-btn
+          round
+          color="accent"
+          :icon="isRoutePanelVisible ? 'directions_off' : 'directions'"
+          @click="toggleRoutePanel"
+        >
+          <q-tooltip>{{
+            isRoutePanelVisible ? $t('Hide route finder') : $t('Show route finder')
+          }}</q-tooltip>
         </q-btn>
       </div>
     </q-page-sticky>
@@ -208,9 +256,15 @@ export default {
     const searchResults = ref([])
     const searchError = ref('')
     const isSearchPanelVisible = ref(true)
+    const isRoutePanelVisible = ref(false)
     let map
     let restaurantsLayer
     let tempMarker = null
+    let routeLayer = null
+    let startMarker = null
+    let destMarker = null
+    let isSelectingStartPoint = false
+    let isSelectingDestPoint = false
     const $t = i18n.global.t
     const userStore = useUserStore()
 
@@ -233,8 +287,22 @@ export default {
     const editingPosition = ref({ lat: '', lng: '' })
     const restaurantToDelete = ref(null)
 
+    // Trạng thái cho tìm đường
+    const startPoint = ref({
+      coords: null,
+      text: '',
+    })
+    const destPoint = ref({
+      coords: null,
+      text: '',
+    })
+
     const toggleSearchPanel = () => {
       isSearchPanelVisible.value = !isSearchPanelVisible.value
+    }
+
+    const toggleRoutePanel = () => {
+      isRoutePanelVisible.value = !isRoutePanelVisible.value
     }
 
     const isValidRestaurant = computed(() => {
@@ -407,6 +475,104 @@ export default {
       }
     }
 
+    // Hàm chọn điểm bắt đầu cho tìm đường
+    const selectStartPoint = () => {
+      isSelectingStartPoint = true
+      isSelectingDestPoint = false
+      map.once('click', (e) => {
+        const coord = e.latlng
+        startPoint.value.coords = coord
+        startPoint.value.text = `${coord.lat.toFixed(6)}, ${coord.lng.toFixed(6)}`
+        isSelectingStartPoint = false
+
+        // Thêm điểm đánh dấu vị trí bắt đầu
+        if (startMarker) {
+          map.removeLayer(startMarker)
+        }
+        startMarker = L.marker(coord, {
+          icon: L.icon({
+            iconUrl: '/icons/start-point.svg', // Cần cung cấp file SVG này
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+          }),
+        }).addTo(map)
+      })
+    }
+
+    // Hàm chọn điểm đích cho tìm đường
+    const selectDestPoint = () => {
+      isSelectingStartPoint = false
+      isSelectingDestPoint = true
+      map.once('click', (e) => {
+        const coord = e.latlng
+        destPoint.value.coords = coord
+        destPoint.value.text = `${coord.lat.toFixed(6)}, ${coord.lng.toFixed(6)}`
+        isSelectingDestPoint = false
+
+        // Thêm điểm đánh dấu vị trí đích
+        if (destMarker) {
+          map.removeLayer(destMarker)
+        }
+        destMarker = L.marker(coord, {
+          icon: L.icon({
+            iconUrl: '/icons/dest-point.svg', // Cần cung cấp file SVG này
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+          }),
+        }).addTo(map)
+      })
+    }
+
+    // Hàm tìm đường đi
+    const findRoute = () => {
+      if (!startPoint.value.coords || !destPoint.value.coords) {
+        alert($t('Please select both start and destination points.'))
+        return
+      }
+
+      // Xóa đường đi cũ nếu có
+      if (routeLayer) {
+        map.removeLayer(routeLayer)
+      }
+
+      // Lấy tọa độ điểm bắt đầu và điểm đích
+      const startCoord = startPoint.value.coords
+      const destCoord = destPoint.value.coords
+
+      // Tạo layer mới để hiển thị đường đi từ GeoServer
+      routeLayer = L.tileLayer
+        .wms('http://localhost:8080/geoserver/restaurantQGIS/wms', {
+          layers: 'restaurantQGIS:route',
+          format: 'image/png',
+          transparent: true,
+          viewparams: `x1:${startCoord.lng};y1:${startCoord.lat};x2:${destCoord.lng};y2:${destCoord.lat}`,
+        })
+        .addTo(map)
+    }
+
+    // Hàm xóa đường đi
+    const clearRoute = () => {
+      startPoint.value.coords = null
+      startPoint.value.text = ''
+      destPoint.value.coords = null
+      destPoint.value.text = ''
+
+      if (startMarker) {
+        map.removeLayer(startMarker)
+        startMarker = null
+      }
+
+      if (destMarker) {
+        map.removeLayer(destMarker)
+        destMarker = null
+      }
+
+      if (routeLayer) {
+        map.removeLayer(routeLayer)
+        routeLayer = null
+      }
+    }
+
     onMounted(() => {
       map = L.map('map', {
         center: [16.074, 108.224],
@@ -449,6 +615,10 @@ export default {
         pointToLayer: (feature, latlng) => L.marker(latlng, { icon: restaurantIcon }),
         onEachFeature: (feature, layer) => {
           const props = feature.properties
+          // Extract coordinates from the feature's geometry
+          const lng = feature.geometry.coordinates[0]
+          const lat = feature.geometry.coordinates[1]
+
           layer.bindPopup(`
             <b>${$t('Restaurant')}:</b> ${props.name || $t('No name')}<br>
             <b>${$t('Cuisine')}:</b> ${props.cuisine || $t('Unknown')}<br>
@@ -472,6 +642,21 @@ export default {
           `
                 : ''
             }
+
+            <div style="margin-top: 10px;">
+              <button 
+                onclick="document.dispatchEvent(new CustomEvent('set-start-point', {detail: {lat: ${lat}, lng: ${lng}}}))"
+                style="background-color: #4CAF50; color: white; border: none; padding: 5px 10px; margin-right: 5px; cursor: pointer;"
+              >
+                ${$t('Set as start point')}
+              </button>
+              <button 
+                onclick="document.dispatchEvent(new CustomEvent('set-dest-point', {detail: {lat: ${lat}, lng: ${lng}}}))"
+                style="background-color: #FF9800; color: white; border: none; padding: 5px 10px; cursor: pointer;"
+              >
+                ${$t('Set as destination')}
+              </button>
+            </div>
           `)
         },
       })
@@ -489,6 +674,50 @@ export default {
         const restaurant = findRestaurantById(id)
         if (restaurant) {
           confirmDelete(restaurant)
+        }
+      })
+
+      // Lắng nghe sự kiện đặt điểm bắt đầu từ popup nhà hàng
+      document.addEventListener('set-start-point', (e) => {
+        const coords = e.detail
+        startPoint.value.coords = coords
+        startPoint.value.text = `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`
+
+        if (startMarker) {
+          map.removeLayer(startMarker)
+        }
+        startMarker = L.marker([coords.lat, coords.lng], {
+          icon: L.icon({
+            iconUrl: '/icons/start-point.svg',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+          }),
+        }).addTo(map)
+
+        if (!isRoutePanelVisible.value) {
+          isRoutePanelVisible.value = true
+        }
+      })
+
+      // Lắng nghe sự kiện đặt điểm đích từ popup nhà hàng
+      document.addEventListener('set-dest-point', (e) => {
+        const coords = e.detail
+        destPoint.value.coords = coords
+        destPoint.value.text = `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`
+
+        if (destMarker) {
+          map.removeLayer(destMarker)
+        }
+        destMarker = L.marker([coords.lat, coords.lng], {
+          icon: L.icon({
+            iconUrl: '/icons/dest-point.svg',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+          }),
+        }).addTo(map)
+
+        if (!isRoutePanelVisible.value) {
+          isRoutePanelVisible.value = true
         }
       })
 
@@ -586,6 +815,17 @@ export default {
       isValidRestaurant,
       isSearchPanelVisible,
       toggleSearchPanel,
+      // Route finding
+      isRoutePanelVisible,
+      toggleRoutePanel,
+      startPoint,
+      destPoint,
+      selectStartPoint,
+      selectDestPoint,
+      findRoute,
+      clearRoute,
+      isSelectingDestPoint,
+      isSelectingStartPoint,
     }
   },
 }
@@ -618,6 +858,17 @@ export default {
   width: 350px;
   max-height: 50vh;
   overflow-y: auto;
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+}
+
+.route-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 999;
+  width: 350px;
   background-color: rgba(255, 255, 255, 0.95);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   border-radius: 8px;
